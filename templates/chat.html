@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UAF Chatbot</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+	<!-- Chatbot Launcher Button -->
+	<div class="chatbot-launcher" id="chatbotLauncher">
+		<div class="chatbot-icon">
+			<i class="fas fa-robot"></i>
+		</div>
+		<div class="chatbot-pulse"></div>
+	</div>
+
+	<!-- Chatbot Container -->
+	<div class="chatbot-container" id="chatbotContainer">
+		<div class="chatbot-header">
+			<div class="header-content">
+				<img src="https://crystalpng.com/wp-content/uploads/2024/10/uaf-logo.png" class="chatbot-logo"
+					alt="UAF Logo">
+				<div class="header-text">
+					<h5>UAF Chat Assistant</h5>
+					<p>How can I help you today?</p>
+				</div>
+			</div>
+			<div class="header-actions">
+				<button class="btn btn-sm btn-minimize" id="minimizeBtn">
+					<i class="fas fa-minus"></i>
+				</button>
+				<button class="btn btn-sm btn-close" id="closeBtn">
+					<i class="fas fa-times"></i>
+				</button>
+			</div>
+		</div>
+
+		<div class="chatbot-body" id="chatbotBody">
+			<!-- Welcome message -->
+			<div class="message bot-message">
+				<div class="message-content">
+					<div class="message-text">
+						Welcome to UAF Chatbot! I can help you with information about:
+						<ul>
+							<li>Programs & Admissions</li>
+							<li>Grading System</li>
+							<li>Campus Facilities</li>
+							<li>Events & Activities</li>
+						</ul>
+						How can I assist you today?
+					</div>
+					<div class="message-time">Now</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Typing indicator -->
+		<div class="typing-indicator" id="typingIndicator">
+			<div class="typing-dot"></div>
+			<div class="typing-dot"></div>
+			<div class="typing-dot"></div>
+		</div>
+
+		<div class="chatbot-footer">
+			<form id="messageForm" class="message-form">
+				<input type="text" id="messageInput" name="msg" placeholder="Type your message here..."
+					autocomplete="off" class="form-control" required />
+				<button type="submit" class="btn btn-send">
+					<i class="fas fa-paper-plane"></i>
+				</button>
+			</form>
+			<div class="footer-actions">
+				<button class="btn btn-clear" id="clearChatBtn" title="Clear Chat">
+					<i class="fas fa-trash-alt"></i>
+				</button>
+				<button class="btn btn-info" id="infoBtn" title="About Chatbot">
+					<i class="fas fa-info-circle"></i>
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Info Popup -->
+	<div class="info-popup" id="infoPopup">
+		<div class="info-content">
+			<h5>About UAF Chatbot</h5>
+			<p>This AI-powered chatbot provides instant information about University of Agriculture Faisalabad.</p>
+			<p>You can ask questions about:</p>
+			<ul>
+				<li>Admission process and requirements</li>
+				<li>Academic programs and courses</li>
+				<li>Campus facilities and services</li>
+				<li>Important dates and deadlines</li>
+				<li>Student life and activities</li>
+			</ul>
+			<button class="btn btn-close-info" id="closeInfoBtn">Got it!</button>
+		</div>
+	</div>
+
+	<script>
+		$(document).ready(function () {
+			// Generate session ID
+			if (!sessionStorage.getItem('chatSessionId')) {
+				sessionStorage.setItem('chatSessionId', generateUUID());
+			}
+
+			// Chatbot elements
+			const launcher = $('#chatbotLauncher');
+			const container = $('#chatbotContainer');
+			const chatbotBody = $('#chatbotBody');
+			const minimizeBtn = $('#minimizeBtn');
+			const closeBtn = $('#closeBtn');
+			const typingIndicator = $('#typingIndicator');
+			const messageForm = $('#messageForm');
+			const messageInput = $('#messageInput');
+
+			// Chat state
+			let isChatOpen = false;
+			let isMinimized = false;
+
+			// Initialize - hide chat container
+			container.hide();
+
+			// Launcher click handler
+			launcher.click(function () {
+				if (!isChatOpen) {
+					openChat();
+				} else if (isMinimized) {
+					restoreChat();
+				} else {
+					closeChat();
+				}
+			});
+
+			// Open chat function
+			function openChat() {
+				container.fadeIn(300);
+				isChatOpen = true;
+				isMinimized = false;
+				container.removeClass('minimized');
+				launcher.find('.chatbot-icon').html('<i class="fas fa-comment-dots"></i>');
+				scrollToBottom();
+			}
+
+			// Minimize chat function
+			function minimizeChat() {
+				container.addClass('minimized');
+				isMinimized = true;
+			}
+
+			// Restore chat function
+			function restoreChat() {
+				container.removeClass('minimized');
+				isMinimized = false;
+				scrollToBottom();
+			}
+
+			// Close chat function
+			function closeChat() {
+				container.fadeOut(300);
+				isChatOpen = false;
+				launcher.find('.chatbot-icon').html('<i class="fas fa-robot"></i>');
+			}
+
+			// Minimize button handler
+			minimizeBtn.click(function (e) {
+				e.stopPropagation();
+				if (isMinimized) {
+					restoreChat();
+				} else {
+					minimizeChat();
+				}
+			});
+
+			// Close button handler
+			closeBtn.click(function (e) {
+				e.stopPropagation();
+				closeChat();
+			});
+
+			// Handle message submission
+			messageForm.on("submit", function (event) {
+				event.preventDefault();
+				const rawText = messageInput.val().trim();
+				const sessionId = sessionStorage.getItem('chatSessionId');
+
+				if (!rawText) return;
+
+				// Add user message to chat
+				addMessage(rawText, 'user');
+				messageInput.val('');
+
+				// Show typing indicator
+				typingIndicator.show();
+				scrollToBottom();
+
+				// Send message to backend
+				$.ajax({
+					data: {
+						msg: rawText,
+						session_id: sessionStorage.getItem('chatSessionId')
+					},
+					type: "POST",
+					url: "/get",
+				}).done(function (data) {
+					// Hide typing indicator
+					typingIndicator.hide();
+
+					// Add bot response to chat
+					addMessage(data, 'bot');
+
+					// Auto-scroll to bottom
+					scrollToBottom();
+				}).fail(function () {
+					typingIndicator.hide();
+					addMessage("Sorry, I'm having trouble connecting. Please try again later.", 'bot');
+					scrollToBottom();
+				});
+			});
+
+			// Clear chat button functionality
+			$("#clearChatBtn").click(function () {
+				const sessionId = sessionStorage.getItem('chatSessionId');
+				$.ajax({
+					data: JSON.stringify({
+						session_id: sessionStorage.getItem('chatSessionId')
+					}),
+					contentType: 'application/json',
+					type: "POST",
+					url: "/clear_chat",
+				}).done(function () {
+					// Clear chat UI except welcome message
+					chatbotBody.html(`
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                <div class="message-text">
+                                    Welcome to UAF Chatbot! I can help you with information about:
+                                    <ul>
+                                        <li>Programs & Admissions</li>
+                                        <li>Grading System</li>
+                                        <li>Campus Facilities</li>
+                                        <li>Events & Activities</li>
+                                    </ul>
+                                    How can I assist you today?
+                                </div>
+                                <div class="message-time">Now</div>
+                            </div>
+                        </div>
+                    `);
+					scrollToBottom();
+				});
+			});
+
+			// Info button functionality
+			$("#infoBtn").click(function () {
+				$("#infoPopup").fadeIn();
+			});
+
+			$("#closeInfoBtn").click(function () {
+				$("#infoPopup").fadeOut();
+			});
+
+			// Close popup when clicking outside
+			$(document).mouseup(function (e) {
+				const popup = $("#infoPopup");
+				if (!popup.is(e.target) && popup.has(e.target).length === 0) {
+					popup.fadeOut();
+				}
+			});
+
+			// Clear session when window closes
+			$(window).on('beforeunload', function () {
+				const sessionId = sessionStorage.getItem('chatSessionId');
+				navigator.sendBeacon("/clear_chat", JSON.stringify({ session_id: sessionId }));
+			});
+
+			// Helper function to add messages
+			function addMessage(text, sender) {
+				const now = new Date();
+				const timeString = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+				const messageClass = sender === 'user' ? 'user-message' : 'bot-message';
+
+				const messageHtml = `
+                    <div class="message ${messageClass}">
+                        <div class="message-content">
+                            <div class="message-text">${text}</div>
+                            <div class="message-time">${timeString}</div>
+                        </div>
+                    </div>
+                `;
+
+				chatbotBody.append(messageHtml);
+			}
+
+			// Auto-scroll to bottom
+			function scrollToBottom() {
+				chatbotBody.stop().animate({
+					scrollTop: chatbotBody[0].scrollHeight
+				}, 200);
+			}
+
+			// Generate UUID function for session ID
+			function generateUUID() {
+				return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+					const r = Math.random() * 16 | 0;
+					const v = c === 'x' ? r : (r & 0x3 | 0x8);
+					return v.toString(16);
+				});
+			}
+
+			// Input field placeholder animation
+			const phrases = [
+				"Ask about admission requirements...",
+				"What programs are available?",
+				"Tell me about campus facilities...",
+				"When is the registration deadline?",
+				"How does the grading system work?"
+			];
+			let currentPhrase = 0;
+			let currentLetter = 0;
+			let isDeleting = false;
+
+			function animatePlaceholder() {
+				const targetPhrase = phrases[currentPhrase];
+
+				if (isDeleting) {
+					messageInput.attr('placeholder', targetPhrase.substring(0, currentLetter - 1));
+					currentLetter--;
+
+					if (currentLetter === 0) {
+						isDeleting = false;
+						currentPhrase = (currentPhrase + 1) % phrases.length;
+					}
+				} else {
+					messageInput.attr('placeholder', targetPhrase.substring(0, currentLetter + 1));
+					currentLetter++;
+
+					if (currentLetter === targetPhrase.length) {
+						isDeleting = true;
+						setTimeout(animatePlaceholder, 1500);
+						return;
+					}
+				}
+
+				setTimeout(animatePlaceholder, isDeleting ? 50 : 100);
+			}
+
+			// Start the animation when input is empty and not focused
+			messageInput.on('focus', function () {
+				$(this).attr('placeholder', "Type your message here...");
+			});
+
+			messageInput.on('blur', function () {
+				if (!$(this).val()) {
+					animatePlaceholder();
+				}
+			});
+
+			// Start animation initially
+			animatePlaceholder();
+		});
+	</script>
+</body>
+
+</html>

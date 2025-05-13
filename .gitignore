@@ -1,0 +1,120 @@
+# Virtual Environments
+universityenv/
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyinstall
+*.pyd
+*.so
+
+# Installed packages/modules
+lib/
+lib64/
+site-packages/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Cython
+cython_debug/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.sublime-workspace
+.spyderproject
+.spyproject
+.ropeproject
+
+# Testing
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Databases
+*.sqlite3
+*.sqlite3-journal
+*.db
+
+# Environment
+.env
+.env.local
+secrets.yml
+local_settings.py
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Documentation
+docs/_build/
+/site
+
+# System
+.DS_Store
+Thumbs.db
+
+# Package managers
+# Pipenv
+#Pipfile.lock
+
+# Poetry
+#poetry.lock
+
+# PDM
+.pdm.toml
+.pdm-python
+.pdm-build/
+__pypackages__/
+
+# Miscellaneous
+.pybuilder/
+target/
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+*.mo
+*.pot
+.scrapy
+instance/
+.webassets-cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
