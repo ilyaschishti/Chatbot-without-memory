@@ -1,157 +1,58 @@
-aiofiles==24.1.0
-aiohappyeyeballs==2.6.1
-aiohttp==3.10.11
-aiosignal==1.3.2
-annotated-types==0.7.0
-anyio==4.9.0
-async-timeout==4.0.3
-attrs==25.3.0
-backoff==2.2.1
-beautifulsoup4==4.13.3
-blinker==1.9.0
-cachetools==5.5.2
-certifi==2025.1.31
-cffi==1.17.1
-chardet==5.2.0
-charset-normalizer==3.4.1
-click==8.1.8
-colorama==0.4.6
-cryptography==44.0.2
-dataclasses-json==0.6.7
-distro==1.9.0
-emoji==2.14.1
-eval_type_backport==0.2.2
-exceptiongroup==1.2.2
-filelock==3.18.0
-filetype==1.2.0
+### Core Application Dependencies ###
 Flask==3.1.0
+Werkzeug==3.0.1  # Pinned for Flask compatibility
+Jinja2==3.1.3
+python-dotenv==1.0.1
 Flask-WTF==1.2.2
-frozenlist==1.5.0
-fsspec==2025.3.2
-google-api-core==2.24.2
-google-api-python-client==2.166.0
-google-auth==2.38.0
-google-auth-httplib2==0.2.0
-google-cloud-core==2.4.3
-google-cloud-storage==3.1.0
-google-crc32c==1.7.1
-google-resumable-media==2.7.2
-googleapis-common-protos==1.69.2
-greenlet==3.1.1
-groq==0.20.0
-h11==0.14.0
-html5lib==1.1
-httpcore==1.0.7
-httplib2==0.22.0
-httpx==0.28.1
-httpx-sse==0.4.0
-huggingface-hub==0.30.2
-idna==3.10
-iniconfig==2.1.0
-itsdangerous==2.2.0
-Jinja2==3.1.6
-joblib==1.4.2
-jsonpatch==1.33
-jsonpointer==3.0.0
-langchain==0.3.21
-langchain-community==0.3.20
+WTForms==3.2.1
+
+### Pinecone & Vector DB ###
+pinecone-client==6.0.2  # Replaces pinecone[grpc]
+langchain-pinecone==0.3.1  # Updated for Pinecone 6.x
 langchain-core==0.3.47
-langchain-experimental==0.3.4
-langchain-groq==0.3.1
-langchain-huggingface==0.1.2
-langchain-pinecone==0.2.3
-langchain-tests==0.3.15
-langchain-text-splitters==0.3.7
-langdetect==1.0.9
-langsmith==0.3.26
+langchain-community==0.3.20
+
+### NLP & AI Services ###
+huggingface-hub==0.30.2
+groq==0.20.0
+requests==2.32.3
+httpx==0.28.1
+
+### Document Processing ###
+pypdf==5.4.0
+beautifulsoup4==4.13.3
 lxml==5.3.2
-MarkupSafe==3.0.2
-marshmallow==3.26.1
-mpmath==1.3.0
-multidict==6.3.2
-mypy-extensions==1.0.0
-nest-asyncio==1.6.0
-networkx==3.4.2
-nltk==3.9.1
+python-docx==1.1.2
+
+### Essential Utilities ###
 numpy==1.26.4
-olefile==0.47
-orjson==3.10.16
-packaging==24.2
-pillow==11.1.0
-pinecone==6.0.2
-pinecone-client==6.0.0
-pinecone-plugin-interface==0.0.7
-pluggy==1.5.0
-propcache==0.3.1
-proto-plus==1.26.1
-protobuf==6.30.2
-psutil==7.0.0
-pyasn1==0.6.1
-pyasn1_modules==0.4.2
-pycparser==2.22
 pydantic==2.11.2
 pydantic_core==2.33.1
-pydantic-settings==2.8.1
-pyparsing==3.2.3
-pypdf==5.4.0
+tqdm==4.67.1
+orjson==3.10.16
+python-dateutil==2.9.0.post0
+
+### Lightweight ML ###
+safetensors==0.5.3
+tokenizers==0.21.1  # For text processing
+
+### Removed Heavy Dependencies ###
+# torch==2.6.0  # Removed - too large for Vercel
+# transformers==4.50.0  # Removed - use HuggingFace API
+# sentence-transformers==3.4.1  # Removed - use API
+# scikit-learn==1.6.1  # Removed - too large
+# scipy==1.15.2  # Removed - too large
+
+### Optimized Async ###
+aiohttp==3.10.11
+aiofiles==24.1.0
+async-timeout==4.0.3
+
+### Security ###
+cryptography==44.0.2
+certifi==2025.1.31
+urllib3==2.3.0
+
+### Development (Optional) ###
 pytest==8.3.5
 pytest-asyncio==0.26.0
-pytest-socket==0.7.0
-python-dateutil==2.9.0.post0
-python-docx==1.1.2
-python-dotenv==1.0.1
-python-iso639==2025.2.18
-python-magic==0.4.27
-python-oxmsg==0.0.2
-PyYAML==6.0.2
-RapidFuzz==3.13.0
-regex==2024.11.6
-requests==2.32.3
-requests-toolbelt==1.0.0
-rsa==4.9
-safetensors==0.5.3
-scikit-learn==1.6.1
-scipy==1.15.2
-sentence-transformers==3.4.1
-six==1.17.0
-sniffio==1.3.1
-soupsieve==2.6
-SQLAlchemy==2.0.40
-sympy==1.13.1
-syrupy==4.9.1
-tenacity==9.1.2
-threadpoolctl==3.6.0
-tokenizers==0.21.1
-tomli==2.2.1
-torch==2.6.0
-tqdm==4.67.1
-transformers==4.50.0
-typing_extensions==4.13.1
-typing-inspect==0.9.0
-typing-inspection==0.4.0
-unstructured==0.17.2
-unstructured-client==0.32.3
-uritemplate==4.1.1
-urllib3==2.3.0
-webencodings==0.5.1
-Werkzeug==3.1.3
-wrapt==1.17.2
-WTForms==3.2.1
-yarl==1.19.0
-zstandard==0.23.0
--e .
-
-
-
-
-# sentence-transformers==3.4.1  # Updated from 2.2.2
-# langchain
-# flask
-# pypdf
-# python-dotenv
-# pinecone[grpc]
-# langchain-pinecone
-# langchain_community
-# langchain_experimental
-# langchain-huggingface==0.1.2  # Added new package
-# -e .
