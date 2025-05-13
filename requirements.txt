@@ -1,18 +1,17 @@
-### Core Application Dependencies ###
+### Core Web Framework ###
 Flask==3.1.0
-Werkzeug==3.0.1  # Pinned for Flask compatibility
+Werkzeug==3.0.1
 Jinja2==3.1.3
 python-dotenv==1.0.1
 Flask-WTF==1.2.2
-WTForms==3.2.1
 
 ### Pinecone & Vector DB ###
-pinecone-client==6.0.2  # Replaces pinecone[grpc]
-langchain-pinecone==0.3.1  # Updated for Pinecone 6.x
+pinecone-client==6.0.0  # Verified working version
+langchain-pinecone==0.3.1  # Compatible with pinecone-client 6.x
 langchain-core==0.3.47
 langchain-community==0.3.20
 
-### NLP & AI Services ###
+### AI Services & NLP ###
 huggingface-hub==0.30.2
 groq==0.20.0
 requests==2.32.3
@@ -27,32 +26,13 @@ python-docx==1.1.2
 ### Essential Utilities ###
 numpy==1.26.4
 pydantic==2.11.2
-pydantic_core==2.33.1
-tqdm==4.67.1
 orjson==3.10.16
-python-dateutil==2.9.0.post0
+tqdm==4.67.1
 
-### Lightweight ML ###
-safetensors==0.5.3
-tokenizers==0.21.1  # For text processing
-
-### Removed Heavy Dependencies ###
-# torch==2.6.0  # Removed - too large for Vercel
-# transformers==4.50.0  # Removed - use HuggingFace API
-# sentence-transformers==3.4.1  # Removed - use API
-# scikit-learn==1.6.1  # Removed - too large
-# scipy==1.15.2  # Removed - too large
-
-### Optimized Async ###
+### Async Support ###
 aiohttp==3.10.11
 aiofiles==24.1.0
-async-timeout==4.0.3
 
 ### Security ###
 cryptography==44.0.2
 certifi==2025.1.31
-urllib3==2.3.0
-
-### Development (Optional) ###
-pytest==8.3.5
-pytest-asyncio==0.26.0
