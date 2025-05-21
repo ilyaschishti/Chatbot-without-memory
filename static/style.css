@@ -169,7 +169,7 @@
 }
 
 .chatbot-body::-webkit-scrollbar-thumb {
-	background-color: #1E5631;
+	background-color: #516658;
 	border-radius: 3px;
 }
 
@@ -212,7 +212,7 @@
 }
 
 .bot-message .message-content {
-	background-color: #e9f5ee;
+	background-color: #afe5ca;
 	color: #333;
 	border-top-left-radius: 5px;
 }
@@ -256,7 +256,7 @@
 	border-radius: 50%;
 	background-color: #1E5631;
 	margin-right: 4px;
-	animation: typingAnimation 1.4s infinite ease-in-out;
+	animation: typingAnimation 3s infinite ease-in-out;
 }
 
 .typing-dot:nth-child(1) {
