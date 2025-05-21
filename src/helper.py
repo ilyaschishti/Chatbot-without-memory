@@ -6,11 +6,6 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader
 )
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_core.documents import Document
-import glob
-import os
-import json
-
 
 # Load PDF files
 def load_pdf_file(data_dir):
@@ -104,10 +99,11 @@ def load_all_files(data_dir):
 
 # Split the data into text chunks
 def text_split(extracted_data):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     return text_splitter.split_documents(extracted_data)
 
 
-# Download HuggingFace embeddings
+#Download the Embeddings from HuggingFace 
 def download_hugging_face_embeddings():
-    return HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+    embeddings_model=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')  #this model return 384 dimensions
+    return embeddings_model

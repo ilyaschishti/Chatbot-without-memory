@@ -1,3 +1,6 @@
+
+
+
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
 from werkzeug.utils import secure_filename
 from functools import wraps
@@ -8,27 +11,19 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_pinecone import PineconeVectorStore
 from langchain_groq import ChatGroq
-from langchain.schema.messages import HumanMessage, AIMessage
 from src.helper import download_hugging_face_embeddings
 from src.prompt import *
-from src.memory import ChatbotMemoryManager
 from store_index import process_files
 from pinecone_setup import initialize_pinecone
 from pinecone import Pinecone
-from langchain.memory import ConversationBufferMemory
 import secrets
 import hashlib
 import os
 import shutil
+import json
 import time
 
 app = Flask(__name__)
-
-def timestamp_to_datetime(timestamp):
-    return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-
-app.jinja_env.filters['timestamp_to_datetime'] = timestamp_to_datetime
-
 load_dotenv()
 
 PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
@@ -44,44 +39,28 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
 
-chatbot_memory = ChatbotMemoryManager(
-    expiry_minutes=30,
-    max_sessions=100,
-    max_history_length=10
-)
-
 print("Initializing Pinecone...")
 index_name = "university"
 pc = initialize_pinecone(index_name=index_name)
 
-print("Loading embeddings...")
-embeddings = download_hugging_face_embeddings()
+embeddings_model = download_hugging_face_embeddings()
 
 try:
     print(f"Attempting to connect to existing index '{index_name}'...")
     docsearch = PineconeVectorStore.from_existing_index(
         index_name=index_name,
-        embedding=embeddings
+        embedding=embeddings_model
     )
     print("Successfully connected to Pinecone index!")
 except ValueError as e:
     print(f"Error connecting to index: {e}")
-    print("Creating empty vector store as fallback...")
-    from langchain_core.documents import Document
-    dummy_doc = Document(page_content="Initialization document", metadata={"source": "init"})
-    docsearch = PineconeVectorStore.from_documents(
-        documents=[dummy_doc],
-        embedding=embeddings,
-        index_name=index_name
-    )
-    print("Created empty vector store.")
 
-print("Setting up retriever...")
 retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
+
 
 print("Initializing LLM...")
 llm = ChatGroq(
-    temperature=0.2,
+    temperature=0.4,
     max_tokens=500,
     model_name="llama3-70b-8192"
 )
@@ -90,13 +69,12 @@ prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system_prompt),
         ("human", "{input}"),
-        ("human", "Chat History: {chat_history}"),
     ]
 )
 
-print("Creating question-answer chain...")
 question_answer_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+
 print("Chatbot setup complete!")
 
 def allowed_file(filename):
@@ -118,83 +96,18 @@ def index():
 @app.route("/get", methods=["GET", "POST"])
 def chat():
     msg = request.form["msg"]
-    session_id = request.form.get("session_id", "default")
-    
-    # Get or create session
-    if not chatbot_memory.get_session(session_id):
-        session_id = chatbot_memory.create_session(session_id)
-    
-    # Get the full conversation history
-    chat_history = chatbot_memory.get_chat_history(session_id)
-    
-    response = rag_chain.invoke({
-        "input": msg,
-        "chat_history": chat_history
-    })
-    
-    chatbot_memory.add_user_message(session_id, msg)
-    chatbot_memory.add_ai_message(session_id, response["answer"])
-    
+    input = msg
+    print("===User query===:",input)
+    response = rag_chain.invoke({"input": msg})
+    print("Respponse printed   ===============", response)
     return str(response["answer"])
 
-@app.route("/clear_chat", methods=["POST"])
-def clear_chat():
-    session_id = request.form.get("session_id")
-    
-    if not session_id and request.content_type == 'application/json':
-        data = request.get_json()
-        session_id = data.get('session_id')
-    
-    if session_id:
-        chatbot_memory.clear_session(session_id)
-        return jsonify({"status": "success", "message": "Chat history cleared"})
-    
-    return jsonify({"status": "error", "message": "No session ID provided"})
+# ---------------- REST OF YOUR EXISTING CODE UNCHANGED ----------------
 
-@app.route('/admin/dashboard')
-@admin_required
-def admin_dashboard():
-    files = []
-    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-        if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            files.append({
-                'name': filename,
-                'size': f"{os.path.getsize(file_path) / 1024:.2f} KB",
-                'date': datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S"),
-                'processed': is_file_processed(filename)
-            })
 
-    stats = {
-        "active_sessions": len(chatbot_memory.sessions),
-        "session_details": [
-            {
-                "id": sid, 
-                "created_at": session.created_at, 
-                "last_accessed": session.last_accessed_at,
-                "message_count": len(session.get_messages())  # Updated line
-            } for sid, session in chatbot_memory.sessions.items()
-        ],
-        "expiry_minutes": chatbot_memory.expiry_seconds // 60,
-        "max_sessions": chatbot_memory.max_sessions,
-        "max_history_length": chatbot_memory.max_history_length
-    }
 
-    return render_template('admin_dashboard.html', files=files, stats=stats)
 
-def is_file_processed(filename):
-    try:
-        pc = Pinecone(api_key=PINECONE_API_KEY)
-        index = pc.Index("university")
-        result = index.query(
-            vector=[0]*384,
-            top_k=1,
-            filter={"pdf_name": filename}
-        )
-        return len(result['matches']) > 0
-    except Exception:
-        return False
-
+# --- Admin Auth Routes ---
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -216,6 +129,40 @@ def admin_logout():
     flash('You have been logged out', 'success')
     return redirect(url_for('admin_login'))
 
+# --- Admin Dashboard ---
+@app.route('/admin', methods=['GET'])
+@admin_required
+def admin_dashboard():
+    files = []
+    metadata_dict = get_all_file_metadata()
+    
+    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+        # Skip metadata.json and directories
+        if filename == 'metadata.json' or os.path.isdir(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+            continue
+            
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.isfile(file_path):
+            file_size = os.path.getsize(file_path) / 1024
+            file_date = datetime.fromtimestamp(os.path.getmtime(file_path))
+            
+            # Get processed status from metadata
+            processed = False
+            for item in metadata_dict:
+                if item.get('filename') == filename:
+                    processed = item.get('processed', False)
+                    break
+                    
+            files.append({
+                'name': filename,
+                'size': f"{file_size:.2f} KB",
+                'date': file_date.strftime("%Y-%m-%d %H:%M:%S"),
+                'processed': processed
+            })
+    
+    return render_template('admin_dashboard.html', files=files)
+
+# --- File Upload ---
 @app.route('/admin/upload', methods=['POST'])
 @admin_required
 def upload_file():
@@ -233,39 +180,66 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
+        # Check if file already exists
         if os.path.exists(file_path):
             flash(f'File {filename} already exists. Please rename your file or delete the existing one.', 'warning')
             return redirect(url_for('admin_dashboard'))
         
         file.save(file_path)
+
+        file_metadata = {
+            'filename': filename,
+            'processed': False,
+            'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        save_file_metadata(file_metadata)
+        
         flash(f'File {filename} uploaded successfully! Click on Process button to add it to the knowledge base.', 'success')
         return redirect(url_for('admin_dashboard'))
 
     flash('File type not allowed', 'danger')
     return redirect(url_for('admin_dashboard'))
 
+# --- Process Single File ---
+# Replace the existing process_file function with this updated version
 @app.route('/admin/process/<filename>', methods=['POST'])
 @admin_required
 def process_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
+    # Check if file exists
     if not os.path.exists(file_path):
         flash(f'File {filename} not found', 'danger')
         return redirect(url_for('admin_dashboard'))
     
+    # Check if file is already processed
+    metadata = get_file_metadata(filename)
+    if metadata and metadata.get('processed', False):
+        flash(f'File {filename} is already processed!', 'info')
+        return redirect(url_for('admin_dashboard'))
+    
     try:
+        # Create a temporary directory for processing
         new_data_folder = os.path.join('Data', 'temp')
         os.makedirs(new_data_folder, exist_ok=True)
         temp_file_path = os.path.join(new_data_folder, filename)
         
+        # Copy the file to the temporary directory
         shutil.copy2(file_path, temp_file_path)
+
+        # Call the existing process_files function to handle indexing
         result = process_files(data_dir=new_data_folder, index_name='university')
 
+        # Clean up temporary files
         os.remove(temp_file_path)
         if os.path.exists(new_data_folder) and not os.listdir(new_data_folder):
             os.rmdir(new_data_folder)
 
+        # Check if any documents were processed
         if result and hasattr(result, 'processed_chunks') and result.processed_chunks > 0:
+            # Update processed status in metadata
+            update_file_processed_status(filename, True)
             flash(f'File {filename} processed and added to knowledge base!', 'success')
         else:
             flash(f'No content could be extracted from {filename}. The file may contain only scanned images or unsupported content.', 'warning')
@@ -275,13 +249,11 @@ def process_file(filename):
 
     return redirect(url_for('admin_dashboard'))
 
+# --- Process All Pending Files ---
 @app.route('/admin/process-all', methods=['POST'])
 @admin_required
 def process_all_files():
-    unprocessed_files = []
-    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-        if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], filename)) and not is_file_processed(filename):
-            unprocessed_files.append(filename)
+    unprocessed_files = get_unprocessed_files()
     
     if not unprocessed_files:
         flash('No pending files to process', 'info')
@@ -297,17 +269,24 @@ def process_all_files():
             continue
             
         try:
+            # Create a temporary directory for processing
             new_data_folder = os.path.join('Data', 'temp')
             os.makedirs(new_data_folder, exist_ok=True)
             temp_file_path = os.path.join(new_data_folder, filename)
             
+            # Copy the file to the temporary directory
             shutil.copy2(file_path, temp_file_path)
+
+            # Call the existing process_files function to handle indexing
             process_files(data_dir=new_data_folder, index_name='university')
 
+            # Clean up temporary files
             os.remove(temp_file_path)
             if os.path.exists(new_data_folder) and not os.listdir(new_data_folder):
                 os.rmdir(new_data_folder)
                 
+            # Update processed status in metadata
+            update_file_processed_status(filename, True)
             processed_count += 1
             
         except Exception as e:
@@ -321,23 +300,162 @@ def process_all_files():
     
     return redirect(url_for('admin_dashboard'))
 
+# --- Helper functions for file metadata ---
+def get_all_file_metadata():
+    """Get all file metadata entries"""
+    metadata_file = os.path.join(app.config['UPLOAD_FOLDER'], 'metadata.json')
+    
+    try:
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                all_metadata = json.load(f)
+            return all_metadata
+        else:
+            return []
+    except Exception as e:
+        app.logger.error(f"Error getting all file metadata: {str(e)}")
+        return []
+
+def get_file_metadata(filename):
+    """Get metadata for a specific file"""
+    all_metadata = get_all_file_metadata()
+    
+    for item in all_metadata:
+        if item.get('filename') == filename:
+            return item
+            
+    return None
+
+def save_file_metadata(metadata):
+    metadata_file = os.path.join(app.config['UPLOAD_FOLDER'], 'metadata.json')
+    
+    try:
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                all_metadata = json.load(f)
+        else:
+            all_metadata = []
+        
+        for i, item in enumerate(all_metadata):
+            if item['filename'] == metadata['filename']:
+                all_metadata[i] = metadata
+                break
+        else:
+            all_metadata.append(metadata)
+        
+        with open(metadata_file, 'w') as f:
+            json.dump(all_metadata, f, indent=2)
+            
+    except Exception as e:
+        app.logger.error(f"Error saving file metadata: {str(e)}")
+
+def update_file_processed_status(filename, processed=True):
+    metadata_file = os.path.join(app.config['UPLOAD_FOLDER'], 'metadata.json')
+    
+    try:
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                all_metadata = json.load(f)
+        else:
+            all_metadata = []
+        
+        updated = False
+        for i, item in enumerate(all_metadata):
+            if item['filename'] == filename:
+                all_metadata[i]['processed'] = processed
+                all_metadata[i]['process_date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                updated = True
+                break
+        
+        # If the file wasn't found in metadata, add it
+        if not updated:
+            all_metadata.append({
+                'filename': filename,
+                'processed': processed,
+                'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'process_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        
+        with open(metadata_file, 'w') as f:
+            json.dump(all_metadata, f, indent=2)
+            
+    except Exception as e:
+        app.logger.error(f"Error updating file processed status: {str(e)}")
+
+def get_unprocessed_files():
+    metadata_file = os.path.join(app.config['UPLOAD_FOLDER'], 'metadata.json')
+    unprocessed = []
+    
+    try:
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                all_metadata = json.load(f)
+            
+            unprocessed = [item['filename'] for item in all_metadata if not item.get('processed', False)]
+            
+    except Exception as e:
+        app.logger.error(f"Error getting unprocessed files: {str(e)}")
+        
+    return unprocessed
+
+# # --- File Deletion ---
+# @app.route('/admin/delete/<filename>')
+# @admin_required
+# def delete_file(filename):
+#     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#     if os.path.exists(file_path):
+#         os.remove(file_path)
+        
+#         # Also remove from metadata
+#         remove_file_metadata(filename)
+        
+#         flash(f'File {filename} deleted successfully', 'success')
+#     else:
+#         flash(f'File {filename} not found', 'danger')
+#     return redirect(url_for('admin_dashboard'))
+
 @app.route('/admin/delete/<filename>')
 @admin_required
 def delete_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
+    # --- Delete embeddings from Pinecone ---
     try:
-        pc = Pinecone(api_key=PINECONE_API_KEY)
+        pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
         index = pc.Index("university")
-        index.delete(filter={"pdf_name": filename})
-        flash(f'Successfully removed embeddings for {filename} from Pinecone', 'success')
+        
+        # Try multiple possible filters since we have different metadata structures
+        filters = [
+            {"pdf_name": filename},  # New consistent metadata
+            {"source": os.path.join(app.config['UPLOAD_FOLDER'], filename)},  # Old style
+            {"source_full_path": os.path.join(app.config['UPLOAD_FOLDER'], filename)}  # New field
+        ]
+        
+        deletion_count = 0
+        for filter_obj in filters:
+            try:
+                # Try deleting with each filter
+                index.delete(filter=filter_obj)
+                print(f"Deleted vectors from Pinecone for file: {filename} with filter {filter_obj}")
+                deletion_count += 1
+            except Exception as e:
+                print(f"Error with filter {filter_obj}: {str(e)}")
+                continue
+        
+        if deletion_count > 0:
+            flash(f'Successfully removed embeddings for {filename} from Pinecone', 'success')
+        else:
+            flash(f'No embeddings found for {filename} in Pinecone', 'warning')
+
     except Exception as e:
         app.logger.error(f"Error deleting vectors from Pinecone: {str(e)}")
         flash(f"Error deleting embeddings: {str(e)}", "danger")
 
+    # --- Delete file locally and update metadata ---
     if os.path.exists(file_path):
         try:
             os.remove(file_path)
+            remove_file_metadata(filename)
             flash(f'File {filename} deleted successfully', 'success')
         except Exception as e:
             app.logger.error(f"Error deleting local file {filename}: {str(e)}")
@@ -347,5 +465,27 @@ def delete_file(filename):
 
     return redirect(url_for('admin_dashboard'))
 
+ # --- Remove file metadata ---............................................................................
+
+def remove_file_metadata(filename):
+    """Remove a file from metadata.json"""
+    metadata_file = os.path.join(app.config['UPLOAD_FOLDER'], 'metadata.json')
+    
+    try:
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                all_metadata = json.load(f)
+            
+            # Filter out the file to be removed
+            all_metadata = [item for item in all_metadata if item.get('filename') != filename]
+            
+            with open(metadata_file, 'w') as f:
+                json.dump(all_metadata, f, indent=2)
+                
+    except Exception as e:
+        app.logger.error(f"Error removing file metadata: {str(e)}")
+
+# === Main Entry Point ===
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True)
+    

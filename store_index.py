@@ -1,4 +1,4 @@
-from src.helper import load_all_files, text_split, download_hugging_face_embeddings
+from src.helper import  load_all_files, text_split, download_hugging_face_embeddings
 from langchain_pinecone import PineconeVectorStore
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
@@ -9,7 +9,7 @@ import time
 load_dotenv()
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 
-print(PINECONE_API_KEY)
+# print(PINECONE_API_KEY)
 
 if not PINECONE_API_KEY:
     raise ValueError("PINECONE_API_KEY not found in environment variables")
@@ -74,13 +74,13 @@ def process_files(data_dir='Data/', index_name='university'):
                 # Ensure source path is consistent
                 chunk.metadata['source_full_path'] = source_path
 
-        embeddings = download_hugging_face_embeddings()
+        embeddings_model = download_hugging_face_embeddings()
 
         # Store embeddings in Pinecone
         print("Creating vector store...")
         docsearch = PineconeVectorStore.from_documents(
             documents=text_chunks,
-            embedding=embeddings,
+            embedding=embeddings_model,
             index_name=index_name
         )
 
@@ -95,29 +95,29 @@ def process_files(data_dir='Data/', index_name='university'):
         traceback.print_exc()
         return None
 
-# Debug function to inspect vectors in the index
-def inspect_vectors(index_name="university", filename=None):
-    pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-    index = pc.Index(index_name)
+# # Debug function to inspect vectors in the index
+# def inspect_vectors(index_name="university", filename=None):
+#     pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+#     index = pc.Index(index_name)
     
-    if filename:
-        # Try both possible filters
-        result1 = index.query(vector=[0]*384, top_k=5, filter={"pdf_name": filename})
-        result2 = index.query(vector=[0]*384, top_k=5, filter={"source_full_path": os.path.join('Data', filename)})
+#     if filename:
+#         # Try both possible filters
+#         result1 = index.query(vector=[0]*384, top_k=5, filter={"pdf_name": filename})
+#         result2 = index.query(vector=[0]*384, top_k=5, filter={"source_full_path": os.path.join('Data', filename)})
         
-        print(f"Results with pdf_name filter: {len(result1['matches'])}")
-        print(f"Results with source_full_path filter: {len(result2['matches'])}")
+#         print(f"Results with pdf_name filter: {len(result1['matches'])}")
+#         print(f"Results with source_full_path filter: {len(result2['matches'])}")
         
-        # Print some sample metadata
-        if result1['matches']:
-            print("Sample metadata with pdf_name:", result1['matches'][0].metadata)
-        if result2['matches']:
-            print("Sample metadata with source_full_path:", result2['matches'][0].metadata)
-    else:
-        # Just get some sample vectors
-        result = index.query(vector=[0]*384, top_k=5)
-        for i, match in enumerate(result['matches']):
-            print(f"Vector {i} metadata:", match.metadata)
+#         # Print some sample metadata
+#         if result1['matches']:
+#             print("Sample metadata with pdf_name:", result1['matches'][0].metadata)
+#         if result2['matches']:
+#             print("Sample metadata with source_full_path:", result2['matches'][0].metadata)
+#     else:
+#         # Just get some sample vectors
+#         result = index.query(vector=[0]*384, top_k=5)
+#         for i, match in enumerate(result['matches']):
+#             print(f"Vector {i} metadata:", match.metadata)
 
 # Example usage
 if __name__ == "__main__":
