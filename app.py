@@ -22,6 +22,7 @@ import os
 import shutil
 import json
 import time
+import tempfile
 
 app = Flask(__name__)
 load_dotenv()
@@ -200,6 +201,45 @@ def upload_file():
 
     flash('File type not allowed', 'danger')
     return redirect(url_for('admin_dashboard'))
+
+
+
+# Add this to your app.py
+
+
+# # Modify upload function to use temporary directory
+# @app.route('/admin/upload', methods=['POST'])
+# @admin_required
+# def upload_file():
+#     if 'file' not in request.files:
+#         flash('No file part', 'danger')
+#         return redirect(url_for('admin_dashboard'))
+
+#     file = request.files['file']
+    
+#     if file.filename == '':
+#         flash('No selected file', 'danger')
+#         return redirect(url_for('admin_dashboard'))
+
+#     if file and allowed_file(file.filename):
+#         filename = secure_filename(file.filename)
+        
+#         # Use temporary directory instead of persistent storage
+#         temp_dir = tempfile.mkdtemp()
+#         file_path = os.path.join(temp_dir, filename)
+#         file.save(file_path)
+        
+#         # Process immediately since storage is ephemeral
+#         try:
+#             result = process_files(data_dir=temp_dir, index_name='university')
+#             flash(f'File {filename} processed and added to knowledge base!', 'success')
+#         except Exception as e:
+#             flash(f'Error processing file: {str(e)}', 'danger')
+#         finally:
+#             # Clean up
+#             shutil.rmtree(temp_dir, ignore_errors=True)
+        
+#         return redirect(url_for('admin_dashboard'))
 
 # --- Process Single File ---
 # Replace the existing process_file function with this updated version
@@ -485,7 +525,14 @@ def remove_file_metadata(filename):
     except Exception as e:
         app.logger.error(f"Error removing file metadata: {str(e)}")
 
-# === Main Entry Point ===
+# # === Main Entry Point ===
+# if __name__ == '__main__':
+#     app.run(host="0.0.0.0", port=8080, debug=True)
+
+
+
+# At the end of your app.py file, replace the last section with:
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)
     
