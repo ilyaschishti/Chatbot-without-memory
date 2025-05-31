@@ -9,6 +9,7 @@
 	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}">
+	<!-- <link rel="stylesheet" href="styles.css"> -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 
@@ -25,17 +26,17 @@
 	<div class="chatbot-container" id="chatbotContainer">
 		<div class="chatbot-header">
 			<div class="header-content">
-				<img src="https://crystalpng.com/wp-content/uploads/2024/10/uaf-logo.png" class="chatbot-logo"
-					alt="UAF Logo">
+				<div class="logo-parent">
+					<img src="https://crystalpng.com/wp-content/uploads/2024/10/uaf-logo.png" class="logo"
+						alt="UAF Logo">
+				</div>
+
 				<div class="header-text">
 					<h5>UAF Chat Assistant</h5>
 					<p>How can I help you today?</p>
 				</div>
 			</div>
 			<div class="header-actions">
-				<button class="btn btn-sm btn-minimize" id="minimizeBtn">
-					<i class="fas fa-minus"></i>
-				</button>
 				<button class="btn btn-sm btn-close" id="closeBtn">
 					<i class="fas fa-times"></i>
 				</button>

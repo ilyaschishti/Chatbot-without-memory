@@ -130,6 +130,18 @@ def admin_logout():
     flash('You have been logged out', 'success')
     return redirect(url_for('admin_login'))
 
+
+from datetime import datetime
+
+# Register a custom Jinja2 filter
+@app.template_filter('timestamp_to_datetime')
+def timestamp_to_datetime_filter(timestamp):
+    try:
+        return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    except:
+        return 'Invalid Timestamp'
+
+
 # --- Admin Dashboard ---
 @app.route('/admin', methods=['GET'])
 @admin_required
@@ -161,7 +173,8 @@ def admin_dashboard():
                 'processed': processed
             })
     
-    return render_template('admin_dashboard.html', files=files)
+    return render_template('admin_dashboard.html', files=files, stats={})
+
 
 # --- File Upload ---
 @app.route('/admin/upload', methods=['POST'])

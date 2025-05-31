@@ -385,7 +385,8 @@
                                                 {% for session in stats.session_details %}
                                                 <tr>
                                                     <td>{{ session.id[:8] }}...</td>
-                                                    <td>{{ session.created_at|timestamp_to_datetime }}</td>
+                                                    <td>{{ session.created_at|timestamp_to_datetime if session.created_at else 'N/A' }}</td>
+
                                                     <td>{{ session.last_accessed|timestamp_to_datetime }}</td>
                                                     <td>{{ session.message_count }}</td>
                                                 </tr>

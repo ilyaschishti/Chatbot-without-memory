@@ -60,9 +60,28 @@ def load_txt_file(data_dir):
     loader = DirectoryLoader(
         data_dir,
         glob="*.txt",
-        loader_cls=TextLoader
+        loader_cls=lambda path: TextLoader(path, encoding='utf-8', autodetect_encoding=True)
     )
+  
     return loader.load()
+
+
+# def load_txt_file(data_dir):
+#     try:
+#         loader = DirectoryLoader(
+#             data_dir,
+#             glob="*.txt",
+#             loader_cls=lambda path: TextLoader(path, encoding='utf-8', autodetect_encoding=True)
+#         )
+#         docs = loader.load()
+#         print(f"✅ Loaded {len(docs)} TXT documents")
+#         return docs
+#     except Exception as e:
+#         print(f"❌ Exception while loading TXT files: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return []
+
 
 
 # Load DOCX files

@@ -43,6 +43,8 @@ def process_files(data_dir='Data/', index_name='university'):
         if not extracted_data:
             print("No documents found to process.")
             return None
+        print(f"Loaded {len(extracted_data)} total documents")
+
         
         text_chunks = text_split(extracted_data)
 
